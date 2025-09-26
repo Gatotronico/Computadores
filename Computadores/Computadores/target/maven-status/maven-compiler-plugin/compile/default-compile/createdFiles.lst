@@ -1,6 +1,10 @@
 com\mycompany\computadores\EquipoCliente.class
+com\mycompany\computadores\servicios\InicializadorDatos.class
+com\mycompany\computadores\PiezaNecesariaComputador.class
+com\mycompany\computadores\Exception\OrdenNoEncontradaException.class
 com\mycompany\computadores\Computadores.class
+com\mycompany\computadores\Exception\StockInsuficienteException.class
+com\mycompany\computadores\servicios\ServicioDatos.class
 com\mycompany\computadores\Cliente.class
 com\mycompany\computadores\Piezas.class
 com\mycompany\computadores\OrdenDeTrabajo.class
-com\mycompany\computadores\PiezaNecesariaComputador.class

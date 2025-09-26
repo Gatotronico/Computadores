@@ -1,0 +1,12 @@
+--- REPORTE DETALLADO DE ÓRDENES DE TRABAJO ---
+Generado el: 2025-09-26
+Total de Órdenes: 1
+
+-------------------------------------------------
+ORDEN N°: 1 | ESTADO: EN_ANALISIS
+Cliente: Juan Álvarez
+Problema: No enciende. Fallo después de actualizar drivers.
+  -> PIEZAS REQUERIDAS:
+     - Cantidad: 2 | Ram{capacidadGb=8, tipoDDR=DDR4}
+     - Cantidad: 1 | Procesador{socket=LGA1200, familia=Core i3}
+-------------------------------------------------

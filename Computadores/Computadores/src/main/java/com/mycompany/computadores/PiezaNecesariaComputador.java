@@ -10,11 +10,11 @@ package com.mycompany.computadores;
  */
 public class PiezaNecesariaComputador {
     private int cantidad;
-    private Piezas piezas;
+    private Pieza pieza;
 
-    public PiezaNecesariaComputador( Piezas piezas,int cantidad) {
+    public PiezaNecesariaComputador( Pieza pieza,int cantidad) {
         this.cantidad = cantidad;
-        this.piezas = piezas;
+        this.pieza = pieza;
     }
 
     public int getCantidad() {
@@ -25,12 +25,12 @@ public class PiezaNecesariaComputador {
         this.cantidad = cantidad;
     }
 
-    public Piezas getPiezas() {
-        return piezas;
+    public Pieza getPieza() {
+        return pieza;
     }
 
-    public void setPiezas(Piezas piezas) {
-        this.piezas = piezas;
+    public void setPieza(Pieza pieza) {
+        this.pieza = pieza;
     }
     
     

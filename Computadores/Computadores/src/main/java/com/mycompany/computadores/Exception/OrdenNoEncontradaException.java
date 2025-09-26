@@ -2,16 +2,14 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package com.mycompany.computadores;
+package com.mycompany.computadores.Exception;
 
 /**
  *
  * @author gabri_oq3uzky
  */
-public enum EstadoOrden {
-    EN_ANALISIS,
-    ESPERANDO_PIEZAS,
-    EN_REPARACION,
-    LISTO_ENTREGAR,
-    ENTREGADO
+public class OrdenNoEncontradaException extends Exception {
+    public OrdenNoEncontradaException(String mensaje){
+        super (mensaje);
+    }
 }

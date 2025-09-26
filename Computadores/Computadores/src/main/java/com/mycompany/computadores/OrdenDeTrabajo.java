@@ -4,39 +4,39 @@
  */
 package com.mycompany.computadores;
 import java.util.ArrayList;
-import java.util.Date;
+import java.time.LocalDate;
 /**
  *
  * @author gabri_mpagqzf
  */
 public class OrdenDeTrabajo {
     private int numeroOrden;
-    private Date fechaRecepcion;
+    private LocalDate fechaRecepcion; 
     private String descripcionProblema;
-    private String estado;
-    private Date fechaEstimadaEntrega;
+    private EstadoOrden estado;
+    private LocalDate fechaEstimadaEntrega;
+    
     
     //relaciones
     private Cliente cliente;
     private EquipoCliente equipoCliente;
-    private ArrayList<PiezaNecesariaComputador> PiezaNecesariaComputador;
+    private ArrayList<PiezaNecesariaComputador> piezasNecesariasComputador;
     
-    
-    public OrdenDeTrabajo(int numeroOrden, Date fechaRecepcion,String descripcionProblema, String estado, Cliente cliente, EquipoCliente equipoCliente){
+    public OrdenDeTrabajo(int numeroOrden, LocalDate fechaRecepcion, String descripcionProblema, EstadoOrden estado, Cliente cliente, EquipoCliente equipoCliente){
         this.numeroOrden = numeroOrden;
         this.fechaRecepcion = fechaRecepcion;
         this.descripcionProblema = descripcionProblema;
         this.estado= estado;
         this.cliente =cliente;
         this.equipoCliente = equipoCliente;
-        this.PiezaNecesariaComputador = new ArrayList<>();
+        this.piezasNecesariasComputador = new ArrayList<>(); 
     }
 
     public void setNumeroOrden(int numeroOrden) {
         this.numeroOrden = numeroOrden;
     }
 
-    public void setFechaRecepcion(Date fechaRecepcion) {
+    public void setFechaRecepcion(LocalDate fechaRecepcion) {
         this.fechaRecepcion = fechaRecepcion;
     }
 
@@ -44,11 +44,11 @@ public class OrdenDeTrabajo {
         this.descripcionProblema = descripcionProblema;
     }
 
-    public void setEstado(String estado) {
+    public void setEstado(EstadoOrden estado) {
         this.estado = estado;
     }
 
-    public void setFechaEstimadaEntrega(Date fechaEstimadaEntrega) {
+    public void setFechaEstimadaEntrega(LocalDate fechaEstimadaEntrega) {
         this.fechaEstimadaEntrega = fechaEstimadaEntrega;
     }
 
@@ -61,14 +61,14 @@ public class OrdenDeTrabajo {
     }
 
     public void setPiezaNecesariaComputador(ArrayList<PiezaNecesariaComputador> PiezaNecesariaComputador) {
-        this.PiezaNecesariaComputador = PiezaNecesariaComputador;
+        this.piezasNecesariasComputador = PiezaNecesariaComputador;
     }
 
     public int getNumeroOrden() {
         return numeroOrden;
     }
 
-    public Date getFechaRecepcion() {
+    public LocalDate getFechaRecepcion() {
         return fechaRecepcion;
     }
 
@@ -76,11 +76,11 @@ public class OrdenDeTrabajo {
         return descripcionProblema;
     }
 
-    public String getEstado() {
+    public EstadoOrden getEstado() {
         return estado;
     }
 
-    public Date getFechaEstimadaEntrega() {
+    public LocalDate getFechaEstimadaEntrega() {
         return fechaEstimadaEntrega;
     }
 
@@ -92,18 +92,16 @@ public class OrdenDeTrabajo {
         return equipoCliente;
     }
 
-    public ArrayList<PiezaNecesariaComputador> getPiezaNecesariaComputador() {
-        return PiezaNecesariaComputador;
+    public ArrayList<PiezaNecesariaComputador> getpiezasNecesariasComputador() {
+        return piezasNecesariasComputador;
     }
     
     //metodo agregar piezas para el pc
-    public void agregarPiezasNecesarias(PiezaNecesariaComputador pieza){
-        this.PiezaNecesariaComputador.add(pieza);
+    public void agregarPiezasNecesarias(PiezaNecesariaComputador pieza) {
+        this.piezasNecesariasComputador.add(pieza);
     }
-    
-    public void estimarFechaDeEntrega(int dias){
-        long millis= fechaRecepcion.getTime() +(dias *24L *60L *60L *1000L);
-        this.fechaEstimadaEntrega= new Date(millis);
+
+    public void estimarFechaDeEntrega(int dias) {
+        this.fechaEstimadaEntrega = this.fechaRecepcion.plusDays(dias); 
     }
-    
 }
