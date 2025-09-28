@@ -3,11 +3,19 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.mycompany.computadores.servicios;
+import com.mycompany.computadores.Exception.PiezaNoEncontradaException;
 import com.mycompany.computadores.*; 
 import com.mycompany.computadores.Exception.*;
 import java.io.*;
 import java.util.*;
 import java.time.LocalDate;
+import com.mycompany.computadores.Pieza; 
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.IOException;
+import com.mycompany.computadores.OrdenDeTrabajo;
+import java.util.List;
+import java.util.ArrayList;
 
 public class ServicioDatos {
     
@@ -37,6 +45,10 @@ public class ServicioDatos {
         return inventarioStock;
     }
     
+    public List<Pieza> getListaInventario() {
+        // Retorna los valores del HashMap como una nueva lista
+        return new ArrayList<>(inventarioStock.values()); 
+    }
     // SIA2.12: Agregar una nueva Orden
     public void agregarOrden(OrdenDeTrabajo orden) {
         this.listaOrdenes.add(orden);
@@ -67,6 +79,92 @@ public class ServicioDatos {
             }
         }
         return filtradas;
+    }
+    
+    public void eliminarPiezaDeOrden(int idOrden, int idPieza) throws OrdenNoEncontradaException {
+        OrdenDeTrabajo orden = buscarOrdenPorId(idOrden);
+
+        // Buscar y eliminar la pieza de la lista anidada usando un Iterator
+        orden.getpiezasNecesariasComputador().removeIf(pnc -> {
+            if (pnc.getPieza().getId() == idPieza) {
+                // Reintegrar la cantidad al stock global ANTES de eliminar
+                pnc.getPieza().setStock(pnc.getPieza().getStock() + pnc.getCantidad());
+                return true;
+            }
+            return false;
+        });
+    }
+    
+    public void modificarPieza(int id, String nuevoNombre, int nuevoStock) throws PiezaNoEncontradaException {
+        Pieza pieza = inventarioStock.get(id);
+
+        if (pieza == null) {
+            throw new PiezaNoEncontradaException("Pieza con ID " + id + " no encontrada.");
+        }
+
+        pieza.setNombre(nuevoNombre);
+        pieza.setStock(nuevoStock);
+        // Nota: Las propiedades específicas (socket, gb, etc.) requerirían un diálogo más complejo.
+    }
+    
+    public void agregarPieza(Pieza nuevaPieza) {
+    // 1. Encontrar el siguiente ID (ID máximo + 1)
+    // Se asume que los IDs de pieza están en el HashMap inventarioStock
+        int nuevoId = inventarioStock.keySet().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0) + 1; // Si no hay piezas, empieza en 1.
+
+        // 2. Asignar el ID y agregar al inventario
+        nuevaPieza.setId(nuevoId); 
+        inventarioStock.put(nuevoId, nuevaPieza);
+    }
+    
+    public void eliminarPieza(int id) throws PiezaNoEncontradaException {
+        // Nota: Se asume que no hay validación para ver si la pieza está en uso en una orden.
+        // Si la hubiera, podrías verificar listaOrdenes antes de eliminar.
+
+        if (inventarioStock.remove(id) == null) {
+            throw new PiezaNoEncontradaException("Pieza con ID " + id + " no encontrada.");
+        }
+    }
+    
+    
+    public void generarReporteTxt(String rutaArchivo) throws IOException {
+        try (PrintWriter reporteWriter = new PrintWriter(new FileWriter(rutaArchivo))) {
+
+            reporteWriter.println("=================================================");
+            reporteWriter.println("         REPORTE DE ÓRDENES DE TRABAJO           ");
+            reporteWriter.println("=================================================");
+            reporteWriter.println("Generado el: " + java.time.LocalDate.now());
+            reporteWriter.println("Órdenes Totales: " + listaOrdenes.size());
+            reporteWriter.println("=================================================");
+
+            for (OrdenDeTrabajo orden : listaOrdenes) {
+                reporteWriter.println("\n-------------------------------------------------");
+                reporteWriter.println("ORDEN N°: " + orden.getNumeroOrden() + 
+                                     " | FECHA: " + orden.getFechaRecepcion() + 
+                                     " | ESTADO: " + orden.getEstado());
+                reporteWriter.println("Cliente: " + orden.getCliente().getNombre() + 
+                                     " (" + orden.getCliente().getRut() + ")");
+                reporteWriter.println("Problema: " + orden.getDescripcionProblema());
+
+                // Lógica para Piezas Requeridas (SIA 2.7)
+                // NOTA: Asegúrate de que el método sea getPiezasNecesariasComputador() (con 'P' mayúscula)
+                if (!orden.getpiezasNecesariasComputador().isEmpty()) { // << CORRECCIÓN DE CAMELCASE (image_cb9ae2.png)
+                    reporteWriter.println("-> PIEZAS REQUERIDAS:");
+                    for (PiezaNecesariaComputador pnc : orden.getpiezasNecesariasComputador()) {
+                        reporteWriter.println("   - " + pnc.getPieza().getNombre() + 
+                                             " (ID: " + pnc.getPieza().getId() + 
+                                             ", Cantidad: " + pnc.getCantidad() + 
+                                             ", Stock Actual: " + pnc.getPieza().getStock() + ")");
+                    }
+                } else {
+                    reporteWriter.println("-> PIEZAS REQUERIDAS: Ninguna.");
+                }
+            }
+            reporteWriter.println("\n=================================================");
+        }
     }
     
     // Lógica para agregar piezas a la colección anidada con validación (SIA2.8, SIA2.9)
@@ -347,32 +445,39 @@ public class ServicioDatos {
         }
     }
     
-    public void eliminarPiezaDeOrden(int idOrden, int idPieza) throws OrdenNoEncontradaException {
-    
-        // 1. Buscar la Orden
+    public void agregarPiezaAOrden(int idOrden, int idPiezaInventario, int cantidad) 
+        throws OrdenNoEncontradaException, StockInsuficienteException {
+
         OrdenDeTrabajo orden = buscarOrdenPorId(idOrden);
 
-        // 2. Usamos Iterator para poder eliminar un elemento mientras iteramos
-        Iterator<PiezaNecesariaComputador> iterator = orden.getpiezasNecesariasComputador().iterator();
-        while (iterator.hasNext()) {
-            PiezaNecesariaComputador pnc = iterator.next();
+        // 1. Encontrar la pieza en el inventario global (necesitas un método o acceso a inventarioStock)
+        // Asumiendo que inventarioStock es un HashMap<Integer, Pieza>
+        Pieza piezaInventario = inventarioStock.get(idPiezaInventario); 
 
-            if (pnc.getPieza().getId() == idPieza) {
+        if (piezaInventario == null) {
+            throw new OrdenNoEncontradaException("La pieza ID " + idPiezaInventario + " no existe en el inventario.");
+        }
 
-                // 3. DEVOLVER EL STOCK al inventario
-                Pieza piezaEnInventario = pnc.getPieza();
-                piezaEnInventario.setStock(piezaEnInventario.getStock() + pnc.getCantidad());
-
-                // 4. Eliminar de la orden
-                iterator.remove(); 
-                System.out.println("✅ Pieza " + pnc.getPieza().getNombre() + 
-                                   " eliminada de la Orden #" + idOrden + " y stock devuelto.");
+        // 2. Verificar si ya existe en la orden (si ya existe, llama a editarCantidadPieza)
+        for (PiezaNecesariaComputador pnc : orden.getpiezasNecesariasComputador()) {
+            if (pnc.getPieza().getId() == idPiezaInventario) {
+                // Si ya está, llama al método de edición para sumar la cantidad
+                editarCantidadPieza(idOrden, idPiezaInventario, pnc.getCantidad() + cantidad);
                 return;
             }
         }
 
-        // Si sale del bucle, la pieza no estaba ahí
-        throw new OrdenNoEncontradaException("Pieza con ID " + idPieza + " no encontrada en la Orden #" + idOrden + ".");
+        // 3. Validar stock
+        if (piezaInventario.getStock() < cantidad) {
+            throw new StockInsuficienteException("Stock insuficiente. Solo hay " + piezaInventario.getStock() + " unidades.");
+        }
+
+        // 4. Crear la PiezaNecesariaComputador y agregar a la orden
+        PiezaNecesariaComputador nuevaPNC = new PiezaNecesariaComputador(piezaInventario, cantidad);
+        orden.agregarPiezasNecesarias(nuevaPNC);
+
+        // 5. Descontar stock del inventario global
+        piezaInventario.setStock(piezaInventario.getStock() - cantidad);
     }
     
     public void modificarOrdenConsola(Scanner scanner) {
@@ -504,5 +609,26 @@ public class ServicioDatos {
         } catch (IOException e) {
             System.err.println("ERROR al generar el reporte: " + e.getMessage());
         }
+    }
+    
+    public void agregarOrden(String problema, Cliente cliente, EquipoCliente equipo) {
+        // 1. Encontrar el siguiente ID (ID máximo + 1)
+        int nuevoId = listaOrdenes.stream()
+                .mapToInt(OrdenDeTrabajo::getNumeroOrden)
+                .max()
+                .orElse(0) + 1; // Si no hay órdenes, empieza en 1.
+
+        // 2. Crear la Orden (con fecha de hoy y estado inicial)
+        OrdenDeTrabajo nuevaOrden = new OrdenDeTrabajo(
+            nuevoId,
+            LocalDate.now(),
+            problema,
+            EstadoOrden.EN_ANALISIS, // Asume que el estado inicial es EN_ANALISIS
+            cliente,
+            equipo
+        );
+
+        // 3. Agregar a la colección
+        this.listaOrdenes.add(nuevaOrden);
     }
 }
