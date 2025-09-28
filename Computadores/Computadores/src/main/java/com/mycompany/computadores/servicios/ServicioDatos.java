@@ -77,7 +77,21 @@ public class ServicioDatos {
             throw new StockInsuficienteException("No hay stock suficiente de " + pieza.getNombre() + ". Stock: " + pieza.getStock());
         }
         
+        descontarStockPieza(pieza.getId(), cantidad);
+        
         orden.agregarPiezasNecesarias(new PiezaNecesariaComputador(pieza, cantidad));
+    }
+    
+    public void descontarStockPieza(int idPieza, int cantidad) {
+        Pieza pieza = inventarioStock.get(idPieza);
+
+        if (pieza == null) {
+            throw new IllegalArgumentException("Pieza con ID " + idPieza + " no encontrada en inventario.");
+        }
+
+        // Actualizar el stock
+        int nuevoStock = pieza.getStock() - cantidad;
+        pieza.setStock(nuevoStock);
     }
     
 // ----------------------------------------------------------------------
@@ -138,7 +152,287 @@ public class ServicioDatos {
         }
         System.out.println("----------------------------------------");
     }
+    
+    
+    public void agregarNuevaOrdenManual(Scanner scanner) {
+        
+        System.out.println("\n--- REGISTRAR NUEVA ORDEN ---");
+        
+        // 1. Datos del Cliente (Simplificado)
+        // [AQUÍ VA EL CÓDIGO PARA LEER EL CLIENTE Y EQUIPO USANDO EL SCANNER]
+        System.out.print("Nombre del Cliente: ");
+        String nombre = scanner.nextLine();
+        System.out.print("RUT del Cliente: ");
+        String rut = scanner.nextLine();
+        System.out.print("Teléfono del Cliente: ");
+        String telefono = scanner.nextLine();
+        Cliente nuevoCliente = new Cliente(nombre, rut, telefono); 
 
+        // 2. Datos del Equipo
+        System.out.print("Modelo del Equipo: ");
+        String modelo = scanner.nextLine();
+        System.out.print("Número de Serie: ");
+        String serie = scanner.nextLine();
+        EquipoCliente nuevoEquipo = new EquipoCliente(modelo, serie);
+        
+        // 3. Datos de la Orden
+        System.out.print("Descripción del Problema: ");
+        String problema = scanner.nextLine();
+        
+        // Generar nuevo ID (Busca el máximo y añade 1. Ejemplo simple)
+        int nuevoId = listaOrdenes.stream()
+                .mapToInt(OrdenDeTrabajo::getNumeroOrden)
+                .max().orElse(0) + 1;
+                
+        // Creamos la nueva orden (fecha actual y estado inicial)
+        OrdenDeTrabajo nuevaOrden = new OrdenDeTrabajo(
+            nuevoId, 
+            LocalDate.now(), 
+            problema, 
+            EstadoOrden.EN_ANALISIS, 
+            nuevoCliente, 
+            nuevoEquipo
+        );
+        
+        // Usamos el método de gestión que ya existe
+        agregarOrden(nuevaOrden);
+        
+        System.out.println("\n✅ Orden #" + nuevoId + " registrada exitosamente.");
+    }
+    
+    // Método para agregar la pieza al inventario (desde consola o GUI)
+    public void agregarPiezaManual(Scanner scanner) {
+        System.out.println("\n--- AÑADIR NUEVA PIEZA AL INVENTARIO ---");
+        try {
+            System.out.print("ID de la Pieza (ej: 7001): ");
+            int id = scanner.nextInt();
+            scanner.nextLine();
+            
+            if (inventarioStock.containsKey(id)) {
+                System.out.println("⚠️ Error: Ya existe una pieza con el ID " + id);
+                return;
+            }
+
+            System.out.print("Nombre de la Pieza: ");
+            String nombre = scanner.nextLine();
+            
+            System.out.print("Stock Inicial: ");
+            int stock = scanner.nextInt();
+            scanner.nextLine();
+            
+            // IMPORTANTE: Aquí deberías crear la clase hija correcta (Procesador, RAM, etc.)
+            // Por simplicidad de consola, se usa la base, pero debe ser adaptado.
+            Pieza nuevaPieza = new Pieza(id, nombre, stock); // Asumiendo que Pieza tiene este constructor
+            
+            inventarioStock.put(id, nuevaPieza);
+            System.out.println("\n✅ Pieza '" + nombre + "' agregada con éxito al inventario.");
+
+        } catch (InputMismatchException e) {
+            System.out.println("❌ Entrada inválida. El ID y el Stock deben ser números.");
+            scanner.nextLine();
+        } catch (Exception e) {
+            System.out.println("❌ Ocurrió un error al añadir la pieza: " + e.getMessage());
+        }
+    }
+    
+    public void mostrarInventario() {
+        System.out.println("\n--- INVENTARIO ACTUAL DE PIEZAS ---");
+
+        if (inventarioStock.isEmpty()) {
+            System.out.println("El inventario está vacío.");
+            return;
+        }
+
+        // Encabezado de la tabla
+        System.out.println("-----------------------------------------------------------------");
+        System.out.printf("| %-5s | %-30s | %-10s | %-10s |\n", "ID", "NOMBRE", "STOCK", "TIPO");
+        System.out.println("-----------------------------------------------------------------");
+
+        // Iterar sobre todos los valores (las piezas) en el HashMap
+        for (Pieza pieza : inventarioStock.values()) {
+            // Usamos printf para formatear la salida como una tabla
+            // getClass().getSimpleName() obtiene el nombre de la clase hija (Procesador, MemoriaRam, etc.)
+            System.out.printf("| %-5d | %-30s | %-10d | %-10s |\n", 
+                pieza.getId(), 
+                pieza.getNombre(), 
+                pieza.getStock(), 
+                pieza.getClass().getSimpleName()
+            );
+        }
+        System.out.println("-----------------------------------------------------------------");
+        System.out.println("Total de piezas diferentes: " + inventarioStock.size());
+    }
+    public void editarCantidadPiezaConsola(Scanner scanner) {
+        System.out.println("\n--- EDITAR CANTIDAD DE PIEZA ---");
+        try {
+            System.out.print("Ingrese el número de orden a modificar: ");
+            int idOrden = scanner.nextInt();
+
+            System.out.print("Ingrese el ID de la pieza a editar: ");
+            int idPieza = scanner.nextInt();
+
+            System.out.print("Ingrese la NUEVA cantidad requerida: ");
+            int nuevaCantidad = scanner.nextInt();
+            scanner.nextLine(); // Consumir el salto de línea
+
+            if (nuevaCantidad <= 0) {
+                System.out.println("❌ Error: La cantidad debe ser mayor a cero.");
+                return;
+            }
+
+            // Llama a la lógica central que maneja la búsqueda y la validación de stock
+            editarCantidadPieza(idOrden, idPieza, nuevaCantidad);
+
+        } catch (InputMismatchException e) {
+            System.out.println("❌ Entrada inválida. Asegúrese de ingresar números para IDs y cantidad.");
+            scanner.nextLine();
+        } catch (OrdenNoEncontradaException | StockInsuficienteException e) {
+            System.out.println("❌ Error de gestión: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("❌ Ocurrió un error inesperado: " + e.getMessage());
+        }
+    }
+    public void editarCantidadPieza(int idOrden, int idPieza, int nuevaCantidad) 
+        throws OrdenNoEncontradaException, StockInsuficienteException {
+    
+        // 1. Buscar la Orden
+        OrdenDeTrabajo orden = buscarOrdenPorId(idOrden);
+
+        // 2. Buscar la PiezaNecesariaComputador dentro de la lista anidada
+        for (PiezaNecesariaComputador pnc : orden.getpiezasNecesariasComputador()) {
+            if (pnc.getPieza().getId() == idPieza) {
+
+                Pieza piezaEnInventario = pnc.getPieza();
+                int diferencia = nuevaCantidad - pnc.getCantidad();
+
+                // LÓGICA DE STOCK MEJORADA: Debe devolver el stock anterior y descontar/añadir la diferencia
+
+                // Si la nueva cantidad es mayor a la actual (diferencia > 0), verificamos stock disponible.
+                if (diferencia > 0 && piezaEnInventario.getStock() < diferencia) {
+                    throw new StockInsuficienteException("Stock insuficiente para aumentar la cantidad. Max a sumar: " + piezaEnInventario.getStock());
+                }
+
+                // Aplicar el cambio de stock
+                piezaEnInventario.setStock(piezaEnInventario.getStock() - diferencia);
+
+                // 3. Modificar la cantidad en la orden
+                pnc.setCantidad(nuevaCantidad);
+                System.out.println("✅ Cantidad de la pieza " + pnc.getPieza().getNombre() + 
+                                   " en Orden #" + idOrden + " actualizada a " + nuevaCantidad + ".");
+                return;
+            }
+        }
+        // Si llegamos aquí, la pieza no fue encontrada en ESA orden
+        throw new OrdenNoEncontradaException("Pieza con ID " + idPieza + " no encontrada en la Orden #" + idOrden + ".");
+    }
+    
+    public void eliminarPiezaDeOrdenConsola(Scanner scanner) {
+        System.out.println("\n--- ELIMINAR PIEZA DE UNA ORDEN ---");
+        try {
+            System.out.print("Ingrese el número de orden: ");
+            int idOrden = scanner.nextInt();
+
+            System.out.print("Ingrese el ID de la pieza a ELIMINAR de la orden: ");
+            int idPieza = scanner.nextInt();
+            scanner.nextLine();
+
+            // Llama a la lógica central de eliminación
+            eliminarPiezaDeOrden(idOrden, idPieza);
+
+        } catch (InputMismatchException e) {
+            System.out.println("❌ Entrada inválida. Asegúrese de ingresar números para los IDs.");
+            scanner.nextLine();
+        } catch (OrdenNoEncontradaException e) {
+            System.out.println("❌ Error de gestión: " + e.getMessage());
+        }
+    }
+    
+    public void eliminarPiezaDeOrden(int idOrden, int idPieza) throws OrdenNoEncontradaException {
+    
+        // 1. Buscar la Orden
+        OrdenDeTrabajo orden = buscarOrdenPorId(idOrden);
+
+        // 2. Usamos Iterator para poder eliminar un elemento mientras iteramos
+        Iterator<PiezaNecesariaComputador> iterator = orden.getpiezasNecesariasComputador().iterator();
+        while (iterator.hasNext()) {
+            PiezaNecesariaComputador pnc = iterator.next();
+
+            if (pnc.getPieza().getId() == idPieza) {
+
+                // 3. DEVOLVER EL STOCK al inventario
+                Pieza piezaEnInventario = pnc.getPieza();
+                piezaEnInventario.setStock(piezaEnInventario.getStock() + pnc.getCantidad());
+
+                // 4. Eliminar de la orden
+                iterator.remove(); 
+                System.out.println("✅ Pieza " + pnc.getPieza().getNombre() + 
+                                   " eliminada de la Orden #" + idOrden + " y stock devuelto.");
+                return;
+            }
+        }
+
+        // Si sale del bucle, la pieza no estaba ahí
+        throw new OrdenNoEncontradaException("Pieza con ID " + idPieza + " no encontrada en la Orden #" + idOrden + ".");
+    }
+    
+    public void modificarOrdenConsola(Scanner scanner) {
+        System.out.println("\n--- MODIFICAR ORDEN EXISTENTE ---");
+        try {
+            System.out.print("Ingrese el número de orden a modificar: ");
+            int idOrden = scanner.nextInt();
+            scanner.nextLine();
+
+            // 1. Mostrar estado actual y solicitar nueva descripción
+            OrdenDeTrabajo orden = buscarOrdenPorId(idOrden);
+            System.out.println("Orden #" + idOrden + " - Estado actual: " + orden.getEstado());
+            System.out.print("Ingrese nueva descripción del problema (deje vacío para mantener): ");
+            String nuevaDescripcion = scanner.nextLine();
+
+            // 2. Solicitar y procesar el nuevo estado
+            EstadoOrden nuevoEstado = null;
+            System.out.println("\nSeleccione el nuevo estado:");
+            EstadoOrden[] estados = EstadoOrden.values();
+            for (int i = 0; i < estados.length; i++) {
+                System.out.println((i + 1) + ") " + estados[i]);
+            }
+            System.out.print("Ingrese el número de la opción de estado (o 0 para no cambiar): ");
+            int opcionEstado = scanner.nextInt();
+            scanner.nextLine();
+
+            if (opcionEstado > 0 && opcionEstado <= estados.length) {
+                nuevoEstado = estados[opcionEstado - 1];
+            } else if (opcionEstado != 0) {
+                System.out.println("⚠️ Opción de estado no válida. El estado no será modificado.");
+            }
+
+            // 3. Llamar a la lógica central de modificación
+            modificarOrdenExistente(idOrden, nuevaDescripcion, nuevoEstado);
+
+        } catch (InputMismatchException e) {
+            System.out.println("❌ Entrada inválida. Asegúrese de ingresar números donde corresponde.");
+            scanner.nextLine();
+        } catch (OrdenNoEncontradaException e) {
+            System.out.println("❌ Error de gestión: " + e.getMessage());
+        }
+    }
+    
+    public void modificarOrdenExistente(int idOrden, String nuevaDescripcion, EstadoOrden nuevoEstado) 
+            throws OrdenNoEncontradaException {
+
+        // 1. Buscar la Orden
+        OrdenDeTrabajo orden = buscarOrdenPorId(idOrden);
+
+        // 2. Aplicar las modificaciones
+        if (nuevaDescripcion != null && !nuevaDescripcion.trim().isEmpty()) {
+            orden.setDescripcionProblema(nuevaDescripcion);
+        }
+
+        if (nuevoEstado != null) {
+            orden.setEstado(nuevoEstado);
+        }
+
+        System.out.println("✅ Orden #" + idOrden + " modificada exitosamente.");
+    }
 // ----------------------------------------------------------------------
 
     // --- MÉTODOS DE PERSISTENCIA Y CARGA ---

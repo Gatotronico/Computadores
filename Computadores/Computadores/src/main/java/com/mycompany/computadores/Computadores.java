@@ -17,7 +17,13 @@ public class Computadores {
             System.out.println("1) Agregar pieza a una orden (con validación de stock)");
             System.out.println("2) Mostrar todas las órdenes y sus piezas");
             System.out.println("3) Generar Reporte TXT");
-            System.out.println("4) Salir (Guarda los datos)");
+            System.out.println("4) Agregar Nueva Orden");
+            System.out.println("5) Editar cantidad de piezas en una orden");
+            System.out.println("6) Eliminar una pieza de una orden");
+            System.out.println("7) Agrega Nueva Pieza al Inventario");
+            System.out.println("8) Modificar orden existente");
+            System.out.println("9) Mostrar Inventario");
+            System.out.println("10) Salir (Guarda los datos)");
             
             try {
                 System.out.print("Ingrese una opción: ");
@@ -35,6 +41,24 @@ public class Computadores {
                         servicio.generarReporteDetallado();
                         break;
                     case 4:
+                        servicio.agregarNuevaOrdenManual(scanner);
+                        break;
+                    case 5:
+                        servicio.editarCantidadPiezaConsola(scanner);
+                        break;
+                    case 6:
+                        servicio.eliminarPiezaDeOrdenConsola(scanner);
+                        break;
+                    case 7:
+                        servicio.agregarPiezaManual(scanner);
+                        break;
+                    case 8:
+                        servicio.modificarOrdenConsola(scanner);
+                        break; 
+                    case 9:
+                        servicio.mostrarInventario();
+                        break;  
+                    case 10:
                         System.out.println("Guardando datos y saliendo...");
                         servicio.guardarDatos(); 
                         salir = true;
